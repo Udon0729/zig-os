@@ -2,13 +2,13 @@
 
 [English README](README.md)
 
-Zig-OS は、Zig で書く実験的な x86_64 向け自作 OS です。ブートローダには Limine を使い、Apple Silicon macOS 上で開発し、`qemu-system-x86_64` で起動確認する構成を想定しています。
+Zig-OS は、Zig で書く実験的な x86_64 向け自作 OS です。ブートローダには Limine を使い、Apple Silicon macOS 上で higher-half ELF をビルドし、`qemu-system-x86_64` で動作確認する構成を前提にしています。
 
 ## 目的
 
 - Zig で freestanding な `x86_64` カーネルを構築する
 - Limine プロトコルでブートする
-- serial 出力による初期 bring-up から始めて、メモリ管理、割り込み、framebuffer へ段階的に広げる
+- 初期 bring-up からメモリ管理、割り込み、基本的な描画まで段階的に広げる
 
 ## リポジトリ構成
 
@@ -19,53 +19,69 @@ Zig-OS は、Zig で書く実験的な x86_64 向け自作 OS です。ブート
 ├── limine.conf
 ├── include/limine.h
 ├── src/
+│   ├── arch/x86_64/port_io.zig
+│   ├── boot/limine.zig
 │   ├── main.zig
-│   └── boot/limine.zig
-└── ARM_MACBOOK_ZIG_OS_GUIDE.md
+│   ├── memory/{hhdm,phys}.zig
+│   ├── serial.zig
+│   └── video/framebuffer.zig
+└── vendor/limine
 ```
 
 ## 現状の実装
 
 実装済み:
 
-- `build.zig` の freestanding build 設定
-- リンカスクリプトと Limine の起動設定
-- base revision / HHDM / memory map / framebuffer 向けの Limine 構造体定義
-- `src/main.zig` のカーネル入口の骨格
+- freestanding Zig build と higher-half linker 構成
+- Limine の起動エントリと protocol request/response 定義
+- COM1 を使った serial 初期化とログ出力
+- HHDM 初期化と単純な物理ページアロケータ
+- framebuffer の取得と画面クリア
+- `zig build kernel`、`zig build iso`、`zig build run`
+
+確認済み:
+
+- Apple Silicon macOS 上の QEMU でカーネルが起動する
+- serial 出力がホストのターミナルへ流れる
+- framebuffer を初期化して単色で塗りつぶせる
 
 未実装:
 
-- `src/serial.zig`
-- `src/arch/x86_64/port_io.zig`
-- `build.zig` 内の ISO 作成と QEMU 実行 step
-- メモリアロケータ、割り込み初期化、framebuffer 描画
-
-## ビルド状況
-
-- `zig build`
-  - 現状は `zig-out/iso/limine.conf` の staging まで成功する
-- `zig build kernel`
-  - `src/serial.zig` と `src/arch/x86_64/port_io.zig` がまだ無いため、現在は失敗する
+- GDT / IDT 初期化
+- 割り込みと例外ハンドラ
+- Limine 提供マッピング以降のページング管理
+- キーボード入力、タイマ、シェル
 
 ## セットアップ
 
-clone 後に Limine の submodule を初期化する:
+clone 後に Limine の submodule を初期化します。
 
 ```sh
 git submodule update --init --recursive
 ```
 
+必要なホストツール:
+
+- Zig `0.15.2`
+- `xorriso`
+- `qemu-system-x86_64`
+- Limine のホストツールを作るための `make`
+
+## ビルドと実行
+
+```sh
+zig build kernel
+zig build iso
+zig build run
+```
+
+- `zig build kernel` は `zig-out/iso/boot/kernel.elf` を生成して staging します
+- `zig build iso` は `zig-out/myos-bios.iso` を作成し、`limine bios-install` まで実行します
+- `zig build run` は QEMU を起動し、serial 出力を標準入出力へ流します
+
 ## 次にやるべきこと
 
-1. `src/arch/x86_64/port_io.zig` を実装する
-2. `src/serial.zig` を実装する
-3. `zig build kernel` で `zig-out/iso/boot/kernel.elf` を生成できるようにする
-4. ISO 生成と `zig build run` を追加する
-5. Limine の HHDM と memory map を使った初期化に進む
-
-## 関連資料
-
-- Apple Silicon + QEMU 前提の開発手順:
-  - [ARM_MACBOOK_ZIG_OS_GUIDE.md](ARM_MACBOOK_ZIG_OS_GUIDE.md)
-- コントリビュータ向けメモ:
-  - [AGENTS.md](AGENTS.md)
+1. GDT と IDT の初期化を追加する
+2. 基本的な例外・割り込みハンドラを入れる
+3. 物理ページアロケータを再利用しやすい形に拡張する
+4. framebuffer 上に簡単な文字描画または図形描画を追加する

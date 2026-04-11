@@ -2,13 +2,13 @@
 
 [日本語版はこちら](README.ja.md)
 
-Zig-OS is an experimental x86_64 hobby OS written in Zig and intended to boot via Limine. The current target workflow is to develop on Apple Silicon macOS and run the kernel under `qemu-system-x86_64`.
+Zig-OS is an experimental x86_64 hobby OS written in Zig and booted through Limine. The current development host is Apple Silicon macOS, with the kernel built as a higher-half ELF and tested under `qemu-system-x86_64`.
 
 ## Goals
 
 - Build a freestanding `x86_64` kernel in Zig
-- Boot through the Limine protocol
-- Grow from early serial-output bring-up into memory management, interrupts, and framebuffer support
+- Boot via the Limine protocol
+- Expand from early bring-up into memory management, interrupts, and basic graphics
 
 ## Repository Layout
 
@@ -19,33 +19,38 @@ Zig-OS is an experimental x86_64 hobby OS written in Zig and intended to boot vi
 ├── limine.conf
 ├── include/limine.h
 ├── src/
+│   ├── arch/x86_64/port_io.zig
+│   ├── boot/limine.zig
 │   ├── main.zig
-│   └── boot/limine.zig
-└── ARM_MACBOOK_ZIG_OS_GUIDE.md
+│   ├── memory/{hhdm,phys}.zig
+│   ├── serial.zig
+│   └── video/framebuffer.zig
+└── vendor/limine
 ```
 
 ## Current Status
 
 Implemented:
 
-- Freestanding Zig build configuration in `build.zig`
-- Linker script and Limine boot entry
-- Limine request/response structs for base revision, HHDM, memory map, and framebuffer
-- Kernel entry skeleton in `src/main.zig`
+- Freestanding Zig build and higher-half linker flow
+- Limine boot entry and protocol request/response bindings
+- Serial bring-up on COM1
+- HHDM initialization and a simple physical page allocator
+- Framebuffer detection and basic screen clear
+- `zig build kernel`, `zig build iso`, and `zig build run`
+
+Verified:
+
+- The kernel boots in QEMU on Apple Silicon macOS
+- Serial output reaches the host terminal
+- The framebuffer can be initialized and cleared
 
 Not implemented yet:
 
-- `src/serial.zig`
-- `src/arch/x86_64/port_io.zig`
-- ISO creation and QEMU run steps in `build.zig`
-- Memory allocator, interrupt setup, framebuffer drawing
-
-## Build Status
-
-- `zig build`
-  - currently succeeds, but only stages `zig-out/iso/limine.conf`
-- `zig build kernel`
-  - currently fails because `src/serial.zig` and `src/arch/x86_64/port_io.zig` are referenced but not created yet
+- GDT and IDT setup
+- Interrupt and exception handlers
+- Paging management beyond Limine-provided mappings
+- Keyboard input, timer support, and a shell
 
 ## Setup
 
@@ -55,17 +60,28 @@ Initialize the Limine submodule after cloning:
 git submodule update --init --recursive
 ```
 
-## Planned Next Steps
+Required host tools:
 
-1. Implement `src/arch/x86_64/port_io.zig`
-2. Implement `src/serial.zig`
-3. Make `zig build kernel` produce `zig-out/iso/boot/kernel.elf`
-4. Add ISO assembly and `zig build run` for QEMU
-5. Initialize HHDM and parse the Limine memory map
+- Zig `0.15.2`
+- `xorriso`
+- `qemu-system-x86_64`
+- `make` for building the Limine host tool when needed
 
-## Documentation
+## Build And Run
 
-- Development guide for Apple Silicon + QEMU:
-  - [ARM_MACBOOK_ZIG_OS_GUIDE.md](ARM_MACBOOK_ZIG_OS_GUIDE.md)
-- Contributor notes:
-  - [AGENTS.md](AGENTS.md)
+```sh
+zig build kernel
+zig build iso
+zig build run
+```
+
+- `zig build kernel` builds and stages `zig-out/iso/boot/kernel.elf`
+- `zig build iso` assembles `zig-out/myos-bios.iso` and runs `limine bios-install`
+- `zig build run` boots the ISO in QEMU with serial output on standard I/O
+
+## Next Steps
+
+1. Add GDT and IDT initialization
+2. Install basic exception and interrupt handlers
+3. Replace the bump-style physical allocator with a reusable frame allocator
+4. Add simple text or primitive drawing on top of the framebuffer
