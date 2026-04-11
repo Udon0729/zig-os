@@ -1,0 +1,4 @@
+[submodule "vendor/limine"]
+	path = vendor/limine
+	url = https://github.com/Limine-Bootloader/Limine.git
+	branch = v11.x-binary

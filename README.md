@@ -47,6 +47,14 @@ Not implemented yet:
 - `zig build kernel`
   - currently fails because `src/serial.zig` and `src/arch/x86_64/port_io.zig` are referenced but not created yet
 
+## Setup
+
+Initialize the Limine submodule after cloning:
+
+```sh
+git submodule update --init --recursive
+```
+
 ## Planned Next Steps
 
 1. Implement `src/arch/x86_64/port_io.zig`

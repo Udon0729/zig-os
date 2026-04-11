@@ -47,6 +47,14 @@ Zig-OS は、Zig で書く実験的な x86_64 向け自作 OS です。ブート
 - `zig build kernel`
   - `src/serial.zig` と `src/arch/x86_64/port_io.zig` がまだ無いため、現在は失敗する
 
+## セットアップ
+
+clone 後に Limine の submodule を初期化する:
+
+```sh
+git submodule update --init --recursive
+```
+
 ## 次にやるべきこと
 
 1. `src/arch/x86_64/port_io.zig` を実装する

@@ -4,6 +4,7 @@ const serial = @import("serial.zig");
 const io = @import("arch/x86_64/port_io.zig");
 const hhdm_mod = @import("memory/hhdm.zig");
 const phys = @import("memory/phys.zig");
+const fb = @import("video/framebuffer.zig");
 
 export var requests_start: limine.RequestsStartMarker = .{};
 export var base_revision: limine.BaseRevision = .{};
@@ -33,7 +34,9 @@ export fn _start() noreturn {
 
     if (framebuffer_request.response) |fb_resp| {
         if (fb_resp.framebuffer_count > 0) {
-            serial.writeString("boot: framebuffer available\r\n");
+            fb.init(fb_resp.framebuffers[0]);
+            fb.clear(0x00202020);
+            serial.writeString("boot: framebuffer initialized\r\n");
         } else {
             serial.writeString("boot: framebuffer response has no entries\r\n");
         }

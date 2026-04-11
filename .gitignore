@@ -1,36 +1,40 @@
-  # Zig build cache / outputs
-  .zig-cache/
-  zig-out/
+# Zig build cache / outputs
+.zig-cache/
+zig-out/
 
-  # Generated kernel artifacts
-  kernel.elf
-  src/kernel.elf
-  *.o
-  *.obj
-  *.a
-  *.lib
-  *.map
+# Generated kernel artifacts
+kernel.elf
+src/kernel.elf
+*.o
+*.obj
+*.a
+*.lib
+*.map
 
-  # Boot / disk images
-  *.iso
-  *.img
-  *.bin
-  *.qcow2
-  *.vmdk
+# Boot / disk images
+iso/
+*.iso
+*.img
+*.bin
+*.qcow2
+*.vmdk
 
-  # QEMU / debug outputs
-  qemu.log
-  *.log
-  *.trace
+# macOS debug bundles
+*.dSYM/
 
-  # GDB / LLDB temporary files
-  .gdb_history
-  .vscode/
+# QEMU / debug outputs
+qemu.log
+*.log
+*.trace
 
-  # macOS
-  .DS_Store
+# GDB / LLDB temporary files
+.gdb_history
+.vscode/
 
-  # Editor temp files
-  *~
-  *.swp
-  *.swo
+# macOS
+.DS_Store
+
+# Editor temp files
+*~
+*.swp
+*.swo
