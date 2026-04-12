@@ -112,6 +112,49 @@ pub const FramebufferRequest = extern struct {
     response: ?*FramebufferResponse = null,
 };
 
+pub const Uuid = extern struct {
+    a: u32,
+    b: u16,
+    c: u16,
+    d: [8]u8,
+};
+
+pub const File = extern struct {
+    revision: u64,
+    address: ?*anyopaque,
+    size: u64,
+    path: ?[*:0]u8,
+    string: ?[*:0]u8,
+    media_type: u32,
+    unused: u32,
+    tftp_id: u32,
+    tftp_port: u32,
+    partition_index: u32,
+    mbr_disk_id: u32,
+    gpt_disk_uuid: Uuid,
+    gpt_part_uuid: Uuid,
+    part_uuid: Uuid,
+};
+
+pub const ModuleResponse = extern struct {
+    revision: u64,
+    module_const: u64,
+    modules: [*]*File,
+};
+
+pub const ModuleRequest = extern struct {
+    id: [4]u64 = .{
+        0xc7b1dd30df4c8b88,
+        0x0a82e883a194f07b,
+        0x3e7e279702be32af,
+        0xca1c4f3bd1280cee,
+    },
+    revision: u64 = 0,
+    response: ?*ModuleResponse = null,
+    internal_module_count: u64 = 0,
+    internal_modules: ?*anyopaque = null,
+};
+
 pub const MEMMAP_USABLE: u64 = 0;
 pub const MEMMAP_RESERVED: u64 = 1;
 pub const MEMMAP_ACPI_RECLAIMABLE: u64 = 2;

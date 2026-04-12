@@ -11,6 +11,7 @@ export var base_revision: limine.BaseRevision = .{};
 export var hhdm_request: limine.HhdmRequest = .{};
 export var memmap_request: limine.MemmapRequest = .{};
 export var framebuffer_request: limine.FramebufferRequest = .{};
+export var module_request: limine.ModuleRequest = .{};
 export var requests_end: limine.RequestsEndMarker = .{};
 
 export fn _start() noreturn {
@@ -19,6 +20,11 @@ export fn _start() noreturn {
 
     const hhdm = hhdm_request.response orelse fatal("limine: no HHDM response");
     const memmap = memmap_request.response orelse fatal("limine: no memmap response");
+    const modules = module_request.response orelse fatal("limine: no module response");
+    _ = modules;
+
+    serial.writeString("boot: module response available\r\n");
+    serial.writeString("boot: continuing after module response\r\n");
     
     hhdm_mod.init(hhdm.offset);
     serial.writeString("mem: HHDM initialized\r\n");
