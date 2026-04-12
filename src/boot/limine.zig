@@ -138,7 +138,7 @@ pub const File = extern struct {
 
 pub const ModuleResponse = extern struct {
     revision: u64,
-    module_const: u64,
+    module_count: u64,
     modules: [*]*File,
 };
 
