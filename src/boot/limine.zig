@@ -127,7 +127,7 @@ pub const File = extern struct {
     string: ?[*:0]u8,
     media_type: u32,
     unused: u32,
-    tftp_id: u32,
+    tftp_ip: u32,
     tftp_port: u32,
     partition_index: u32,
     mbr_disk_id: u32,
