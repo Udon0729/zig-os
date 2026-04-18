@@ -21,31 +21,41 @@ export var framebuffer_request: limine.FramebufferRequest = .{};
 export var module_request: limine.ModuleRequest = .{};
 export var requests_end: limine.RequestsEndMarker = .{};
 
-export fn _start() noreturn {
+const LimineBootstrap = struct {
+    hhdm: *limine.HhdmResponse,
+    memmap: *limine.MemmapResponse,
+    modules: *limine.ModuleResponse,
+};
+
+fn earlyInitSerialAndCpu() void {
     cpu.cli();
 
     serial.init(0x3f8);
     serial.writeString("boot: entered _start\r\n");
 
-    serial.writeString("cpu: before gdt.loadTable\r\n");
     gdt.loadTable();
-    serial.writeString("cpu: after gdt.loadTable\r\n");
-
-    serial.writeString("cpu: before gdt.reloadSegments\r\n");
     gdt.reloadSegments();
-    serial.writeString("cpu: after gdt.reloadSegments\r\n");
+    serial.writeString("cpu: gdt initialized\r\n");
 
     interrupts.init();
     serial.writeString("cpu: idt initialized\r\n");
-    
+}
+
+fn fetchLimineResponses() LimineBootstrap {
     const hhdm = hhdm_request.response orelse fatal("limine: no HHDM response");
     const memmap = memmap_request.response orelse fatal("limine: no memmap response");
     const modules = module_request.response orelse fatal("limine: no module response");
-    _ = modules;
 
-    serial.writeString("boot: module response available\r\n");
-    serial.writeString("boot: continuing after module response\r\n");
-    
+    serial.writeString("boot: limine modules ok\r\n");
+
+    return .{
+        .hhdm = hhdm,
+        .memmap = memmap,
+        .modules = modules,
+    };
+}
+
+fn initMemorySubsystem(hhdm: *limine.HhdmResponse, memmap: *limine.MemmapResponse) void {
     hhdm_mod.init(hhdm.offset);
     serial.writeString("mem: HHDM initialized\r\n");
 
@@ -53,11 +63,13 @@ export fn _start() noreturn {
     serial.writeString("mem: Physical allocator initialized\r\n");
 
     if (phys.allocPage()) |_| {
-        serial.writeString("mem: allocPage ok\r\n");
+        serial.writeString("mem: smoke page alloc ok\r\n");
     } else {
         fatal("mem: allocPage failed");
     }
+}
 
+fn initFramebufferOptional() void {
     if (framebuffer_request.response) |fb_resp| {
         if (fb_resp.framebuffer_count > 0) {
             fb.init(fb_resp.framebuffers[0]);
@@ -69,6 +81,16 @@ export fn _start() noreturn {
     } else {
         serial.writeString("boot: no framebuffer response\r\n");
     }
+}
+
+export fn _start() noreturn {
+    earlyInitSerialAndCpu();
+
+    const boot = fetchLimineResponses();
+    initMemorySubsystem(boot.hhdm, boot.memmap);
+    _ = boot.modules;
+
+    initFramebufferOptional();
 
     serial.writeString("boot: hello from Zig OS\r\n");
     io.haltLoop();
