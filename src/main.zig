@@ -5,6 +5,13 @@ const io = @import("arch/x86_64/port_io.zig");
 const hhdm_mod = @import("memory/hhdm.zig");
 const phys = @import("memory/phys.zig");
 const fb = @import("video/framebuffer.zig");
+const cpu = @import("arch/x86_64/cpu.zig");
+const gdt = @import("arch/x86_64/gdt.zig");
+const interrupts = @import("arch/x86_64/interrupts.zig");
+
+comptime {
+    _ = @import("runtime.zig");
+}
 
 export var requests_start: limine.RequestsStartMarker = .{};
 export var base_revision: limine.BaseRevision = .{};
@@ -15,9 +22,22 @@ export var module_request: limine.ModuleRequest = .{};
 export var requests_end: limine.RequestsEndMarker = .{};
 
 export fn _start() noreturn {
+    cpu.cli();
+
     serial.init(0x3f8);
     serial.writeString("boot: entered _start\r\n");
 
+    serial.writeString("cpu: before gdt.loadTable\r\n");
+    gdt.loadTable();
+    serial.writeString("cpu: after gdt.loadTable\r\n");
+
+    serial.writeString("cpu: before gdt.reloadSegments\r\n");
+    gdt.reloadSegments();
+    serial.writeString("cpu: after gdt.reloadSegments\r\n");
+
+    interrupts.init();
+    serial.writeString("cpu: idt initialized\r\n");
+    
     const hhdm = hhdm_request.response orelse fatal("limine: no HHDM response");
     const memmap = memmap_request.response orelse fatal("limine: no memmap response");
     const modules = module_request.response orelse fatal("limine: no module response");

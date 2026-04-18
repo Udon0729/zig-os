@@ -58,7 +58,7 @@ fn exceptionName(vector: u64) []const u8 {
     };
 }
 
-export fn isr_dispatch(frame: *const InterruptFrame) callconv(.C) void {
+export fn isr_dispatch(frame: *const InterruptFrame) void {
     serial.writeString("\r\n=== EXCEPTION ===\r\n");
     serial.writeString("vector: ");
     serial.writeDecU64(frame.vector);

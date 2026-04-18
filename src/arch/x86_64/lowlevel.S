@@ -1,17 +1,37 @@
+.global cpu_lidt
+.type cpu_lidt, @function
+cpu_lidt:
+    subq $16, %rsp
+    movw %di, (%rsp)
+    movq %rsi, 2(%rsp)
+    lidt (%rsp)
+    addq $16, %rsp
+    ret
+
+.global cpu_lgdt
+.type cpu_lgdt, @function
+cpu_lgdt:
+    subq $16, %rsp
+    movw %di, (%rsp)
+    movq %rsi, 2(%rsp)
+    lgdt (%rsp)
+    addq $16, %rsp
+    ret
+
 .global gdt_flush
 .type gdt_flush, @function
 gdt_flush:
+    pushq %rdi
+    leaq 1f(%rip), %rax
+    pushq %rax
+    lretq
+
+1:
     mov %si, %ds
     mov %si, %es
     mov %si, %fs
     mov %si, %gs
     mov %si, %ss
-
-    pushq %rdi
-    lea 1f(%rip), %rax
-    pushq %rax
-    lretq
-1:
     ret
 
 .macro ISR_NOERR n

@@ -1,12 +1,5 @@
-pub const Gdtr = packed struct {
-    limit: u16,
-    base: u64,
-};
-
-pub const Idtr = packed struct {
-    limit: u16,
-    base: u64,
-};
+extern fn cpu_lidt(limit: u16, base: u64) void;
+extern fn cpu_lgdt(limit: u16, base: u64) void;
 
 pub inline fn cli() void {
     asm volatile ("cli");
@@ -26,20 +19,12 @@ pub inline fn haltLoop() noreturn {
     }
 }
 
-pub inline fn lidt(idtr: *const Idtr) void {
-    asm volatile ("lidt (%[ptr])"
-        :
-        : [ptr] "r" (idtr),
-        : .{ .memory = true }
-    );
+pub inline fn lidt(limit: u16, base: u64) void {
+    cpu_lidt(limit, base);
 }
 
-pub inline fn lgdt(gdtr: *const Gdtr) void {
-    asm volatile ("lgdt (%[ptr])"
-        :
-        : [ptr] "r" (gdtr),
-        : .{ .memory = true }
-    );
+pub inline fn lgdt(limit: u16, base: u64) void {
+    cpu_lgdt(limit, base);
 }
 
 pub inline fn readCr2() u64 {
@@ -49,4 +34,3 @@ pub inline fn readCr2() u64 {
         : .{}
     );
 }
-

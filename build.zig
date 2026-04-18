@@ -27,6 +27,20 @@ pub fn build(b: *std.Build) void {
     // red_zone = false: カーネルでは無効化しておくのが無難
     kernel_obj.root_module.red_zone = false;
 
+    const lowlevel_obj_cmd = b.addSystemCommand(&.{
+        b.graph.zig_exe,
+        "cc",
+        "-c",
+        "-x",
+        "assembler-with-cpp",
+        "-target",
+        "x86_64-freestanding-none",
+        "-o",
+    });
+    lowlevel_obj_cmd.setName("assemble lowlevel");
+    const lowlevel_obj = lowlevel_obj_cmd.addOutputFileArg("lowlevel-x86_64.o");
+    lowlevel_obj_cmd.addFileArg(b.path("src/arch/x86_64/lowlevel.S"));
+
     const link_kernel = b.addSystemCommand(&.{ b.graph.zig_exe, "ld.lld" });
     link_kernel.addArgs(&.{
         "-m", "elf_x86_64",
@@ -34,6 +48,7 @@ pub fn build(b: *std.Build) void {
         "-T", "linker.ld",
     });
     link_kernel.addFileArg(kernel_obj.getEmittedBin());
+    link_kernel.addFileArg(lowlevel_obj);
     link_kernel.addArg("-o");
     const linked_kernel = link_kernel.addOutputFileArg("kernel.elf");
 
