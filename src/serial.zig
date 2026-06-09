@@ -20,6 +20,40 @@ fn txReady() bool {
     return (io.in8(g_base + 5) & 0x20) != 0;
 }
 
+fn rxReady() bool {
+    return (io.in8(g_base + 5) & 0x01) != 0;
+}
+
+pub fn readByte() u8 {
+    while (!rxReady()) {}
+    return io.in8(g_base + 0);
+}
+
+pub fn readLine(buf: []u8) usize {
+    var i: usize = 0;
+    while (i < buf.len - 1) {
+        const c = readByte();
+        if (c == 0x0D or c == 0x0A) {
+            writeByte(0x0D);
+            writeByte(0x0A);
+            break;
+        } else if (c == 0x08 or c == 0x7F) {
+            if (i > 0) {
+                i -= 1;
+                writeByte(0x08);
+                writeByte(' ');
+                writeByte(0x08);
+            }
+        } else if (c >= 0x20 and c <= 0x7E) {
+            buf[i] = c;
+            i += 1;
+            writeByte(c);
+        }
+    }
+    buf[i] = 0;
+    return i;
+}
+
 pub fn writeByte(byte: u8) void {
     while (!txReady()) {}
     io.out8(g_base + 0, byte);

@@ -56,6 +56,11 @@ pub fn build(b: *std.Build) void {
     const install_limine_conf = b.addInstallFile(b.path("limine.conf"), "iso/limine.conf");
     const install_bios_sys = b.addInstallFile(b.path("vendor/limine/limine-bios.sys"), "iso/limine-bios.sys");
     const install_bios_cd = b.addInstallFile(b.path("vendor/limine/limine-bios-cd.bin"), "iso/boot/limine-bios-cd.bin");
+    // assets/initrd/ を tar で固めて /boot/initrd.tar として ISO に配置する
+    const initrd_tar = b.addSystemCommand(&.{ "tar", "-cf", "assets/initrd.tar", "-C", "assets/initrd", "." });
+    initrd_tar.setName("create initrd.tar");
+    const install_initrd = b.addInstallFile(b.path("assets/initrd.tar"), "iso/boot/initrd.tar");
+    install_initrd.step.dependOn(&initrd_tar.step);
 
     const kernel_step = b.step("kernel", "Build the freestanding x86_64 kernel");
     kernel_step.dependOn(&install_kernel.step);
@@ -83,6 +88,7 @@ pub fn build(b: *std.Build) void {
     iso_cmd.step.dependOn(&install_limine_conf.step);
     iso_cmd.step.dependOn(&install_bios_sys.step);
     iso_cmd.step.dependOn(&install_bios_cd.step);
+    iso_cmd.step.dependOn(&install_initrd.step);
 
     const bios_install = b.addSystemCommand(&.{
         "vendor/limine/limine",
