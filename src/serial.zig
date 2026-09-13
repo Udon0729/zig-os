@@ -29,29 +29,40 @@ pub fn readByte() u8 {
     return io.in8(g_base + 0);
 }
 
-pub fn readLine(buf: []u8) usize {
-    var i: usize = 0;
-    while (i < buf.len - 1) {
+var skip_lf = false;
+
+pub fn readLine(buf: []u8) error{LineTooLong}!usize {
+    var length: usize = 0;
+    var overflow = false;
+    while (true) {
         const c = readByte();
-        if (c == 0x0D or c == 0x0A) {
-            writeByte(0x0D);
-            writeByte(0x0A);
-            break;
-        } else if (c == 0x08 or c == 0x7F) {
-            if (i > 0) {
-                i -= 1;
-                writeByte(0x08);
-                writeByte(' ');
-                writeByte(0x08);
+        if (skip_lf) {
+            skip_lf = false;
+            if (c == '\n') continue;
+        }
+        if (c == '\r' or c == '\n') {
+            skip_lf = c == '\r';
+            writeLine("");
+            if (overflow) return error.LineTooLong;
+            return length;
+        }
+        // Drain an oversized line completely; never execute its truncated prefix.
+        if (overflow) continue;
+        if (c == 0x08 or c == 0x7f) {
+            if (length > 0) {
+                length -= 1;
+                writeString("\x08 \x08");
             }
-        } else if (c >= 0x20 and c <= 0x7E) {
-            buf[i] = c;
-            i += 1;
+        } else if ((c >= 0x20 and c <= 0x7e) or c == '\t') {
+            if (length == buf.len) {
+                overflow = true;
+                continue;
+            }
+            buf[length] = c;
+            length += 1;
             writeByte(c);
         }
     }
-    buf[i] = 0;
-    return i;
 }
 
 pub fn writeByte(byte: u8) void {
@@ -59,12 +70,15 @@ pub fn writeByte(byte: u8) void {
     io.out8(g_base + 0, byte);
 }
 
+var last_was_cr = false;
+
 pub fn writeString(msg: []const u8) void {
     for (msg) |c| {
-        if (c == 0x0A) {
+        if (c == 0x0A and !last_was_cr) {
             writeByte(0x0D);
         }
         writeByte(c);
+        last_was_cr = c == '\r';
     }
 }
 

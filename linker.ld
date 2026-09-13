@@ -26,6 +26,10 @@ SECTIONS {
     } :rodata
 
     .data : AT(ADDR(.data) - KERNEL_OFFSET) ALIGN(4K) {
+        /* Preserve protocol discovery order in every optimization mode. */
+        KEEP(*(.limine_requests_start))
+        KEEP(*(.limine_requests))
+        KEEP(*(.limine_requests_end))
         *(.data .data.*)
         *(.data.rel.ro*)
         *(.got .got.*)
